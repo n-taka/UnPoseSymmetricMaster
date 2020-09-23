@@ -1,0 +1,25 @@
+<buttons>
+  <button path="ZPlugin:Clearance Master">
+    <title text="Clearance Master" trans="クリアランスマスター"/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Height for selected object">
+    <title text="Height for selected object" trans="選択中のサブツールの高さ"/>
+    <info text="Set height for selected object." trans="現在選択中のサブツールがどのくらいの高さなのかを設定します"/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Minimum clearance">
+    <title text="Minimum clearance" trans="最小クリアランス"/>
+    <info text="Set minimum clearance for the colors gradient." trans="グラデーションで最小(青)となるクリアランスを設定します"/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Maximum clearance">
+    <title text="Maximum clearance" trans="最大クリアランス"/>
+    <info text="Set maximum clearance for the colors gradient." trans="グラデーションで最大(赤)となるクリアランスを設定します"/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Overwrite">
+    <title text="Overwrite" trans="上書きモード"/>
+    <info text="Overwrite original Polypaint." trans="オリジナルのポリペイントを上書きします"/>
+  </button>
+  <button path="ZPlugin:Clearance Master:From Clearance">
+    <title text="From Clearance" trans="クリアランス計算"/>
+    <info text="Polypaint from clearance." trans="クリアランスの値をもとにポリペイントを計算します"/>
+  </button>
+</buttons>

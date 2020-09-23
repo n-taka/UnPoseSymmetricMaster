@@ -1,0 +1,25 @@
+<buttons>
+  <button path="ZPlugin:Clearance Master">
+    <title text="Clearance Master" trans=""/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Height for selected object">
+    <title text="Height for selected object" trans=""/>
+    <info text="Set height for selected object." trans=""/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Minimum clearance">
+    <title text="Minimum clearance" trans=""/>
+    <info text="Set minimum clearance for the colors gradient." trans=""/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Maximum clearance">
+    <title text="Maximum clearance" trans=""/>
+    <info text="Set maximum clearance for the colors gradient." trans=""/>
+  </button>
+  <button path="ZPlugin:Clearance Master:Overwrite">
+    <title text="Overwrite" trans=""/>
+    <info text="Overwrite original Polypaint." trans=""/>
+  </button>
+  <button path="ZPlugin:Clearance Master:From Clearance">
+    <title text="From Clearance" trans=""/>
+    <info text="Polypaint from clearance." trans=""/>
+  </button>
+</buttons>
