@@ -4,6 +4,3 @@
 [submodule "submodule/vcpkg"]
 	path = submodule/vcpkg
 	url = https://github.com/microsoft/vcpkg.git
-[submodule "submodule/libigl"]
-	path = submodule/libigl
-	url = https://github.com/libigl/libigl.git
