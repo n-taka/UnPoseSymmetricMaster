@@ -37,7 +37,6 @@ set(INCLUDE_DIR
     ${EIGEN3_INCLUDE_DIR}
     submodule/FromZ/src
     submodule/libigl/include
-    submodule/MeanShift_cpp
 )
 
 if(BUILD_EXE)

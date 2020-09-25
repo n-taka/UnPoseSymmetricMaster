@@ -16,10 +16,9 @@ struct Mesh
     std::vector<Index> G;
 };
 
-template <typename Scalar, typename Index>
-void calculateSymmetricPlane(
-	const Mesh<Scalar, Index> &meshIn,
-    Eigen::Matrix<Scalar, 1, Eigen::Dynamic> &eulerXZY,
-    Eigen::Matrix<Scalar, 1, Eigen::Dynamic> &translateXYZ);
+bool calculateSymmetricPlane(
+	const Mesh<double, int> &meshIn,
+    Eigen::Matrix<double, 1, Eigen::Dynamic> &eulerXZY,
+    Eigen::Matrix<double, 1, Eigen::Dynamic> &translateXYZ);
 
 #include "calculateSymmetricPlane.cpp"
