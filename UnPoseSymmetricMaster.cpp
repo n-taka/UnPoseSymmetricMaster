@@ -1,10 +1,10 @@
-#include "ClearanceMaster.h"
+#include "UnPoseSymmetricMaster.h"
 
 #include <vector>
 #include <string>
 #include <filesystem>
 #include "readGoZFile.h"
-#include "calculateClearance.h"
+#include "calculateSymmetricPlane.h"
 #include "writeGoZFile.h"
 
 ////
@@ -21,7 +21,7 @@ extern "C" DLLEXPORT float version(char *someText, double optValue, char *output
 	return 1.0f;
 }
 
-extern "C" DLLEXPORT float computeClearance(char *someText, double optValue, char *outputBuffer, int optBuffer1Size, char *pOptBuffer2, int optBuffer2Size, char **zData)
+extern "C" DLLEXPORT float computeRotation(char *someText, double optValue, char *outputBuffer, int optBuffer1Size, char *pOptBuffer2, int optBuffer2Size, char **zData)
 {
 	// parse parameters
 	std::filesystem::path inputGoZFileName(someText);

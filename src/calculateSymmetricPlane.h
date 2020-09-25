@@ -17,9 +17,9 @@ struct Mesh
 };
 
 template <typename Scalar, typename Index>
-void calculateRotation(
+void calculateSymmetricPlane(
 	const Mesh<Scalar, Index> &meshIn,
     Eigen::Matrix<Scalar, 1, Eigen::Dynamic> &eulerXZY,
     Eigen::Matrix<Scalar, 1, Eigen::Dynamic> &translateXYZ);
 
-#include "calculateRotation.cpp"
+#include "calculateSymmetricPlane.cpp"

@@ -2,7 +2,7 @@
 #include <string>
 #include <filesystem>
 #include "readGoZFile.h"
-#include "calculateRotation.h"
+#include "calculateSymmetricPlane.h"
 #include "igl/writeOBJ.h"
 #include "Eigen/Geometry"
 
@@ -24,16 +24,8 @@ void main(int argc, char *argv[])
 
         Eigen::Matrix<double, 1, Eigen::Dynamic> eulerXZY;
         Eigen::Matrix<double, 1, Eigen::Dynamic> translateXYZ;
-        calculateRotation(meshIn, eulerXZY, translateXYZ);
+        calculateSymmetricPlane(meshIn, eulerXZY, translateXYZ);
 
-        std::cout << eulerXZY << std::endl;
-        std::cout << translateXYZ << std::endl;
-        V *= Eigen::AngleAxisd(eulerXZY(0), Eigen::Vector3d::UnitX()).toRotationMatrix();
-        igl::writeOBJ("rot1.obj", V, F);
-        V *= Eigen::AngleAxisd(eulerXZY(1), Eigen::Vector3d::UnitZ()).toRotationMatrix();
-        igl::writeOBJ("rot2.obj", V, F);
-        V *= Eigen::AngleAxisd(eulerXZY(2), Eigen::Vector3d::UnitY()).toRotationMatrix();
-        igl::writeOBJ("rot3.obj", V, F);
     }
     else
     {

@@ -7,7 +7,7 @@ if(WIN32)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
 
-set(PROJECT unPoseMaster)
+set(PROJECT unPoseSymmetricMaster)
 project(${PROJECT})
 # version
 set(serial "1.0")
@@ -37,6 +37,7 @@ set(INCLUDE_DIR
     ${EIGEN3_INCLUDE_DIR}
     submodule/FromZ/src
     submodule/libigl/include
+    submodule/MeanShift_cpp
 )
 
 if(BUILD_EXE)
@@ -47,7 +48,7 @@ if(BUILD_EXE)
 else()
     # Create shared library
     set(CPP_FILES
-        UnPoseMaster.cpp
+        UnPoseSymmetricMaster.cpp
     )
 endif()
 ##########################################
