@@ -60,5 +60,5 @@ fi
 ############
 mkdir -p build
 cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE="submodule/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET="${triplet}" -DBUILD_EXE=ON
+cmake .. -DCMAKE_TOOLCHAIN_FILE="submodule/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET="${triplet}" -DBUILD_EXE=OFF
 cmake --build . --config "Release"

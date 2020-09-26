@@ -1,0 +1,173 @@
+////
+// dll path, language
+////
+[VarDef, zfutilPath, "dummy"]
+[VarDef, dllPath, "dummy"]
+[VarDef, enLangFilePath, "dummy"]
+[VarDef, language]
+////
+// debug
+[VarDef, dataDirPath, [fileNameResolvePath, "UnPoseSymmetricMaster_2020\"]]
+// install
+//[VarDef, dataDirPath, [fileNameResolvePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\"]]
+////
+
+// value for calculation
+[MVarDef, memInOut, [Val, 1024*1024], 0]
+
+//////
+// search dlls
+// from http://docs.pixologic.com/user-guide/customizing-zbrush/zscripting/zfileutils/#dllPath
+//////
+[RoutineDef, CheckSystem,
+    //check ZBrush version
+    [VarSet,Zvers,[ZBrushInfo,0]]
+    [If,[Val,Zvers] >= 4.8,,		
+        [Note,"\Cff9923This zscript\Cffffff is not designed for this version of \Cff9923ZBrush\Cffffff.",,3,4737096,,300]
+        [Exit]
+    ]
+    // Make sure we have the dll and set its path
+    [If, [ZBrushInfo, 6]==0,//windows
+        //use the path below for testing only
+        [VarSet, dllPath, "UnPoseSymmetricMaster_2020\unPoseSymmetricMaster.dll"]
+        [VarSet, zfutilPath, "UnPoseSymmetricMaster_2020\ZFileUtils64.dll"]
+        [VarSet, enLangFilePath, "UnPoseSymmetricMaster_2020\lang\UnPoseSymmetricMaster_2020_en.xml"]
+        //use the path below for installed plugins
+        //[VarSet, dllPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\unPoseSymmetricMaster.dll"]
+        //[VarSet, zfutilPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\ZFileUtils64.dll"]
+        //[VarSet, enLangFilePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\lang\UnPoseSymmetricMaster_2020_en.xml"]
+        ,
+        // no support for macOS for this plugins
+    ]
+    // check if there are dll/lib exists
+    [If, [FileExists, [Var,dllPath]],
+    , // else no DLL.
+    [Note,"\Cff9923Note :\Cc0c0c0 The \Cff9923 UnPoseSymmetricMaster plugin \Cffffffdll/lib\Cc0c0c0 could not be found at the correct location.  Please re-install the plugin, making sure the relevant files and folders are in the \CffffffZStartup/ZPlugs\Cc0c0c0 folder."]
+    [Exit]
+    ]
+]
+//////
+
+
+//////
+// translation routine
+// from http://docs.pixologic.com/user-guide/customizing-zbrush/zscripting/zfileutils/localization/
+//////
+[RoutineDef, ZFU_RegisterLocalizationFile,
+	[FileExecute, [Var, zfutilPath], RegisterLocalizationFile, enFilePath]
+, enFilePath]
+//////
+
+//////
+// startup
+//////
+// + search dll
+[RoutineCall, CheckSystem]
+//[RoutineCall, ZFU_GetCurrentLanguage, language]
+[RoutineCall, ZFU_RegisterLocalizationFile, [FileNameResolvePath, [Var, enLangFilePath]]]
+
+//////
+// UI
+//////
+[ISubPalette, "ZPlugin:UnPoseSymmetric Master"]
+
+[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0.0, 0.001, -180.0, 180.0, "Rotate (X)",
+    [ISet, "Tool:Deformation:Rotate X", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
+    // update internal value...
+    ,
+    0,
+    1
+]
+[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate Z", 0.0, 0.001, -180.0, 180.0, "Rotate (Z)",
+    [ISet, "Tool:Deformation:Rotate Z", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate Z"]]
+    // update internal value...
+    ,
+    0,
+    1
+]
+
+
+[IButton, "ZPlugin:UnPoseSymmetric Master:Initialize", "Initialize for selected subtool",
+    [If, [IExists, Tool:Export],
+        [IFreeze,
+            [RoutineCall, CheckSystem]
+
+            // get the name of current active sub tool
+            [VarSet, subTName, ""]
+            [VarSet, activeSubT, [SubToolGetActiveIndex]]
+            [VarSet, activeSubTName, ""]
+
+            [VarDef, posX]
+            [VarDef, posY]
+            [VarDef, posZ]
+            [VarDef, sizeX]
+            [VarDef, sizeY]
+            [VarDef, sizeZ]
+
+            // select active subtool
+            [SubToolSelect, [Var, activeSubT]]
+
+            [VarSet, subTName, [IGetTitle,Tool:ItemInfo]] // gets the tool name
+            [VarSet, activeSubTName, [StrExtract, #subTName, 0, [StrLength, #subTName]-2]] // this takes of the end period
+
+            // export current subtool to GoZ file (temporary file)
+            [FileNameSetNext, [StrMerge, [Var, dataDirPath], #activeSubTName, ".GoZ"]]
+
+            // store current export settings
+            [VarSet, origScale, [IGet,Tool:Export:Scale]]
+            [VarSet, origOffsetX, [IGet,Tool:Export:X Offset]]
+            [VarSet, origOffsetY, [IGet,Tool:Export:Y Offset]]
+            [VarSet, origOffsetZ, [IGet,Tool:Export:Z Offset]]
+            [ISet,Tool:Export:Scale,0.0]
+            [ISet,Tool:Export:X Offset,0.0]
+            [ISet,Tool:Export:Y Offset,0.0]
+            [ISet,Tool:Export:Z Offset,0.0]
+            // store current position
+            [VarSet, posX, [IGet,Tool:Geometry:X Position]]
+            [VarSet, posY, [IGet,Tool:Geometry:Y Position]]
+            [VarSet, posZ, [IGet,Tool:Geometry:Z Position]]
+            // store current size
+            [VarSet, sizeX, [IGet,Tool:Geometry:X Size]]
+            [VarSet, sizeY, [IGet,Tool:Geometry:Y Size]]
+            [VarSet, sizeZ, [IGet,Tool:Geometry:Z Size]]
+
+            [IPress,Tool:Export]
+
+            // restore scale/Offset
+            [ISet,Tool:Export:Scale,[Var, origScale]]
+            [ISet,Tool:Export:X Offset,[Var, origOffsetX]]
+            [ISet,Tool:Export:Y Offset,[Var, origOffsetY]]
+            [ISet,Tool:Export:Z Offset,[Var, origOffsetZ]]
+
+            // text for dll
+            [VarSet, textForDll, [StrMerge, [Var, dataDirPath], [Var, activeSubTName], ".GoZ"]]
+
+            // write parameters to memblock
+            [VarSet, result, [FileExecute, [Var, dllPath], "computeRotation", #textForDll, 0, memInOut, ]]
+        ]
+
+        [If, result,
+            [IFreeze,
+                [IClick, "Tool:Masking:Clear"]
+                // read parameters from memblock
+                [Iset, "Tool:Geometry:Position:X Position", 0]
+                [Iset, "Tool:Geometry:Position:Y Position", 0]
+                [Iset, "Tool:Geometry:Position:Z Position", 0]
+                [IModSet, "Tool:Deformation:Rotate", 1]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 0]]
+                [IModSet, "Tool:Deformation:Rotate", 2]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 1]]
+                [IModSet, "Tool:Deformation:Rotate", 4]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 2]]
+                // [Iset, "Tool:Geometry:Position:X Position", [Var, posX]]
+                // [Iset, "Tool:Geometry:Position:Y Position", [Var, posY]]
+                // [Iset, "Tool:Geometry:Position:Z Position", [Var, posZ]]
+            ]
+        ,
+            [Note, "Sorry, there is some error..."]
+        ]
+    ]
+    ,
+    0,
+    1
+]

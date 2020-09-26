@@ -2,7 +2,7 @@
 #include <string>
 #include <filesystem>
 #include "readGoZFile.h"
-#include "calculateSymmetricPlane.h"
+#include "calculateEulerAnglesForSymmetrize.h"
 #include "igl/writeOBJ.h"
 #include "Eigen/Geometry"
 
@@ -20,11 +20,11 @@ void main(int argc, char *argv[])
         igl::list_to_matrix(meshIn.V, V);
         igl::polygon_mesh_to_triangle_mesh(meshIn.F, F);
 
-        igl::writeOBJ("in.obj", V, F);
+        // igl::writeOBJ("in.obj", V, F);
 
         Eigen::Matrix<double, 1, Eigen::Dynamic> eulerXZY;
         Eigen::Matrix<double, 1, Eigen::Dynamic> translateXYZ;
-        calculateSymmetricPlane(meshIn, eulerXZY, translateXYZ);
+        calculateEulerAnglesForSymmetrize(meshIn, eulerXZY, translateXYZ);
 
     }
     else

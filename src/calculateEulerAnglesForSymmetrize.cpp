@@ -1,7 +1,7 @@
-#ifndef calculateSymmetricPlane_CPP
-#define calculateSymmetricPlane_CPP
+#ifndef calculateEulerAnglesForSymmetrize_CPP
+#define calculateEulerAnglesForSymmetrize_CPP
 
-#include "calculateSymmetricPlane.h"
+#include "calculateEulerAnglesForSymmetrize.h"
 
 #include "Meanshift.hpp"
 #include "Eigen/Geometry"
@@ -18,6 +18,10 @@
 
 #include "igl/octree.h"
 #include "igl/knn.h"
+
+#include "igl/AABB.h"
+#include "igl/per_face_normals.h"
+#include "igl/iterative_closest_point.h"
 
 #include "igl/writeOBJ.h"
 #include "igl/writePLY.h"
@@ -155,6 +159,7 @@ namespace
                 {
                     Transformation t;
                     t.s = (signQ.k1 / signP.k1 + signQ.k2 / signP.k2) * 0.5;
+                    // t.s = 1.0;
                     const Eigen::Quaternion<double> q0 = Eigen::Quaternion<double>::FromTwoVectors(signQ.n, signP.n);
                     Eigen::Matrix<double, 1, 3> rotatedQC1;
                     Eigen::Matrix<double, 1, 3> rotatedQC2;
@@ -196,6 +201,7 @@ namespace
                     signPReflect.c1 *= -1;
 
                     Transformation t;
+                    // t.s = 1.0;
                     t.s = (signQReflect.k1 / signPReflect.k1 + signQReflect.k2 / signPReflect.k2) * 0.5;
                     const Eigen::Quaternion<double> q0 = Eigen::Quaternion<double>::FromTwoVectors(signQReflect.n, signPReflect.n);
                     Eigen::Matrix<double, 1, 3> rotatedQC1;
@@ -247,7 +253,6 @@ namespace
         {
             clustering::Meanshift meanShift(0, kernel_bandwidth, 7, 0.5, beta1, beta2, beta3);
             meanShift.FindModes(X, modesV, indexMap);
-            std::cout << minModeCount << " " << modesV.size() << " " << maxModeCount << std::endl;
             if (modesV.size() > maxModeCount)
             {
                 kernel_bandwidth *= 1.5;
@@ -292,53 +297,140 @@ namespace
 
     void estimateBestPlane(
         const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &V,
+        const Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> &F,
         const std::vector<Transformation> &transformation,
-        const Transformation &significantMode,
         const std::vector<int> &indices,
         Eigen::Matrix<double, 1, Eigen::Dynamic> &point,
         Eigen::Matrix<double, 1, Eigen::Dynamic> &normal)
     {
-        const Transformation &oneOfBestT = transformation.at(indices.at(0));
-        const Eigen::Matrix<double, 1, Eigen::Dynamic> vi = V.row(oneOfBestT.vi);
-        Eigen::Matrix<double, 1, Eigen::Dynamic> vj = vi;
-        Eigen::Matrix<double, 3, 3> mat;
-        mat = Eigen::AngleAxisd(significantMode.R(0), Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(significantMode.R(1), Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(significantMode.R(2), Eigen::Vector3d::UnitZ());
-        vj *= mat;
-        vj *= significantMode.s;
-        vj += significantMode.t;
-        // Eigen::Matrix<double, 1, Eigen::Dynamic> vj = V.row(oneOfBestT.vj);
+        const double threshold = 1.0e-1;
+        double minError = std::numeric_limits<double>::max();
 
-        point = (vi + vj) * 0.5;
-        normal = (vi - vj).normalized();
-        std::cout << point << std::endl;
-        std::cout << normal << std::endl;
+        igl::AABB<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>, 3> Ytree;
+        Ytree.init(V, F);
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> NY;
+        igl::per_face_normals(V, F, NY);
 
+        Eigen::Matrix<double, 3, 3> bestR;
+        Eigen::Matrix<double, 1, 3> bestt;
+        Eigen::Matrix<double, 1, Eigen::Dynamic> bestPoint;
+        Eigen::Matrix<double, 1, Eigen::Dynamic> bestNormal;
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mirrorICPV;
+
+        for (int pairIdx = 0; pairIdx < indices.size() && minError > threshold; ++pairIdx)
         {
-            Eigen::Matrix<double, 1, Eigen::Dynamic> base1 = normal.template head<3>().cross(vi.template head<3>()).normalized();
-            Eigen::Matrix<double, 1, Eigen::Dynamic> base0 = base1.template head<3>().cross(normal.template head<3>()).normalized();
-            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmpV;
-            Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> tmpF;
-            tmpV.resize(4, 3);
-            tmpV.row(0) = point + base0 * 10;
-            tmpV.row(1) = point + base1 * 10;
-            tmpV.row(2) = point - base0 * 10;
-            tmpV.row(3) = point - base1 * 10;
-            tmpF.resize(2, 3);
-            tmpF.row(0) << 0, 1, 2;
-            tmpF.row(1) << 2, 3, 0;
-            igl::writeOBJ("plane.obj", tmpV, tmpF);
+            const Transformation &oneOfBestT = transformation.at(indices.at(pairIdx));
+            const Eigen::Matrix<double, 1, Eigen::Dynamic> vi = V.row(oneOfBestT.vi);
+            const Eigen::Matrix<double, 1, Eigen::Dynamic> vj = V.row(oneOfBestT.vj);
+            point = (vi + vj) * 0.5;
+            normal = (vi - vj).normalized();
+
+            // alignment with ICP
+            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> VX;
+            Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> FX;
+
+            // mirror with plane
+            VX = V;
+            for (int v = 0; v < VX.rows(); ++v)
+            {
+                const double height = (VX.row(v) - point).dot(normal);
+                VX.row(v) -= height * 2 * normal;
+            }
+            FX = F;
+            for (int f = 0; f < FX.rows(); ++f)
+            {
+                std::swap(FX(f, 1), FX(f, 2));
+            }
+            // igl::writeOBJ("mirror.obj", VX, FX);
+
+            const int num_samples = 2000;
+            const int max_iters = 20;
+
+            Eigen::Matrix<double, 3, 3> R;
+            Eigen::Matrix<double, 1, 3> t;
+            R.setIdentity(3, 3);
+            t.setConstant(1, 3, 0);
+            Eigen::Matrix<double, Eigen::Dynamic, 1> sqrD;
+            for (int iter = 0; iter < max_iters; iter++)
+            {
+                // Sample random points on X
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> X;
+                {
+                    Eigen::VectorXi XI;
+                    Eigen::MatrixXd B;
+                    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> VXRT = (VX * R).rowwise() + t;
+
+                    igl::random_points_on_mesh(num_samples, VXRT, FX, B, XI, X);
+                }
+                // Compute closest point
+                Eigen::VectorXi I;
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> P;
+                {
+                    Ytree.squared_distance(V, F, X, sqrD, I, P);
+                }
+
+                // Use better normals?
+                Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> N;
+                igl::slice(NY, I, 1, N);
+                //MatrixXS N = (X - P).rowwise().normalized();
+                // fit rotation,translation
+                Eigen::Matrix<double, 3, 3> Rup;
+                Eigen::Matrix<double, 1, 3> tup;
+                // Note: Should try out Szymon Rusinkiewicz's new symmetric icp
+                igl::rigid_alignment(X, P, N, Rup, tup);
+                // update running rigid transformation
+                R = (R * Rup).eval();
+                t = (t * Rup + tup).eval();
+                // Better stopping condition?
+            }
+
+            if ((sqrD.sum() / num_samples) < minError)
+            {
+                minError = sqrD.sum() / num_samples;
+                bestR = R;
+                bestt = t;
+                bestPoint = point;
+                bestNormal = normal;
+
+                VX *= R;
+                VX.rowwise() += t;
+                mirrorICPV = VX;
+                // igl::writeOBJ("mirror_ICP_best.obj", VX, FX);
+            }
         }
+
+        point = (V.row(0) + mirrorICPV.row(0)) * 0.5;
+        normal = (V.row(0) - mirrorICPV.row(0)).normalized();
+        // {
+        //     Eigen::Matrix<double, 1, Eigen::Dynamic> base1 = normal.template head<3>().cross(V.row(0).template head<3>()).normalized();
+        //     Eigen::Matrix<double, 1, Eigen::Dynamic> base0 = base1.template head<3>().cross(normal.template head<3>()).normalized();
+        //     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmpV;
+        //     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> tmpF;
+        //     tmpV.resize(4, 3);
+        //     tmpV.row(0) = point + base0 * 10;
+        //     tmpV.row(1) = point + base1 * 10;
+        //     tmpV.row(2) = point - base0 * 10;
+        //     tmpV.row(3) = point - base1 * 10;
+        //     tmpF.resize(2, 3);
+        //     tmpF.row(0) << 0, 1, 2;
+        //     tmpF.row(1) << 2, 3, 0;
+        //     igl::writeOBJ("plane_ICP_best.obj", tmpV, tmpF);
+        // }
     }
 } // namespace
 
-bool calculateSymmetricPlane(
+bool calculateEulerAnglesForSymmetrize(
     const Mesh<double, int> &meshIn,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &point,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &normal)
+    Eigen::Matrix<double, 1, Eigen::Dynamic> &eulerXYZ,
+    Eigen::Matrix<double, 1, Eigen::Dynamic> &translateXYZ)
 {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V;
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> F, F_;
     igl::list_to_matrix(meshIn.V, V);
+    // avoid too small input
+    double ratio = 100.0 / (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
+    V *= ratio;
+
     igl::polygon_mesh_to_triangle_mesh(meshIn.F, F_);
 
     std::vector<int> maskedF;
@@ -368,7 +460,7 @@ bool calculateSymmetricPlane(
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V_ = V;
     F_ = F;
     igl::remove_unreferenced(V_, F_, V, F, I);
-    igl::writeOBJ("masked.obj", V, F);
+    // igl::writeOBJ("masked.obj", V, F);
 
     ////
     // find symmetry plane
@@ -392,7 +484,7 @@ bool calculateSymmetricPlane(
     ////
     std::vector<Signature> signature;
     calculateSignatureFromMesh(V, F, sampleIdxIntoV, signature);
-    std::cout << "Use " << signature.size() << " samples" << std::endl;
+    // std::cout << "Use " << signature.size() << " samples" << std::endl;
     if (signature.size() <= 0)
     {
         return false;
@@ -402,7 +494,7 @@ bool calculateSymmetricPlane(
     // (Sec. 2.1) Point Pruning
     ////
     prunePoints(signature, 0.75);
-    std::cout << "Use " << signature.size() << " samples (after pruning)" << std::endl;
+    // std::cout << "Use " << signature.size() << " samples (after pruning)" << std::endl;
     if (signature.size() <= 0)
     {
         return false;
@@ -414,26 +506,25 @@ bool calculateSymmetricPlane(
     // std::vector<std::pair<int, int>> sigPairs;
     std::vector<Transformation> transformation;
     pairPoints(signature, 200, transformation);
-    std::cout << "Use " << transformation.size() << " pairs (incl. reflection)" << std::endl;
+    // std::cout << "Use " << transformation.size() << " pairs (incl. reflection)" << std::endl;
     if (transformation.size() <= 0)
     {
         return false;
     }
-
-    // {
-    //     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmpV;
-    //     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> tmpF, tmpE;
-    //     tmpV.resize(sigPairs.size() * 2, 3);
-    //     tmpE.resize(sigPairs.size(), 2);
-    //     for (int v = 0; v < sigPairs.size(); ++v)
-    //     {
-    //         tmpV.row(v * 2 + 0) = V.row(sigPairs.at(v).first);
-    //         tmpV.row(v * 2 + 1) = V.row(sigPairs.at(v).second);
-    //         tmpE.row(v) << v * 2 + 0, v * 2 + 1;
-    //     }
-    //     std::cout << std::endl;
-    //     igl::writePLY("pairs.ply", tmpV, tmpF, tmpE);
-    // }
+    {
+        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> tmpV;
+        Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> tmpF, tmpE;
+        tmpV.resize(transformation.size() * 2, 3);
+        tmpE.resize(transformation.size(), 2);
+        for (int v = 0; v < transformation.size(); ++v)
+        {
+            tmpV.row(v * 2 + 0) = V.row(transformation.at(v).vi);
+            tmpV.row(v * 2 + 1) = V.row(transformation.at(v).vj);
+            tmpE.row(v) << v * 2 + 0, v * 2 + 1;
+        }
+        std::cout << std::endl;
+        // igl::writePLY("pairs.ply", tmpV, tmpF, tmpE);
+    }
 
     // (Sec. 3) Clustering
     const double BBDiagonalLength = (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
@@ -442,14 +533,36 @@ bool calculateSymmetricPlane(
     std::vector<Transformation> modes;
     std::vector<std::vector<int>> indices;
     clusteringTransformation(transformation, BBDiagonalLength, minModeCount, maxModeCount, modes, indices);
-    std::cout << modes.size() << " modes are found" << std::endl;
+    // std::cout << modes.size() << " modes are found" << std::endl;
     if (modes.size() <= 0 || indices.at(0).size() <= 0)
     {
         return false;
     }
 
     // (Sec. 4) Verification
-    estimateBestPlane(V, transformation, modes.at(0), indices.at(0), point, normal);
+    Eigen::Matrix<double, 1, Eigen::Dynamic> point, normal;
+    estimateBestPlane(V, F, transformation, indices.at(0), point, normal);
+
+    // move to center
+    // V.rowwise() -= point;
+    const Eigen::Quaternion<double> q = Eigen::Quaternion<double>::FromTwoVectors(Eigen::Vector3d::UnitX(), normal);
+
+    eulerXYZ = q.normalized().toRotationMatrix().eulerAngles(0, 1, 2).transpose();
+    translateXYZ = point;
+
+    // V = (V * q.toRotationMatrix());
+    Eigen::AngleAxisd m0(eulerXYZ(0), Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd m1(eulerXYZ(1), Eigen::Vector3d::UnitY());
+    Eigen::AngleAxisd m2(eulerXYZ(2), Eigen::Vector3d::UnitZ());
+    V *= m0.toRotationMatrix();
+    V *= m1.toRotationMatrix();
+    V *= m2.toRotationMatrix();
+    // V /= ratio;
+
+    // std::cout << q.normalized().toRotationMatrix() << std::endl;
+    // std::cout << m0.toRotationMatrix() * m1.toRotationMatrix() * m2.toRotationMatrix() << std::endl;
+
+    // igl::writeOBJ("symmetrized.obj", V, F);
 
     return true;
 }

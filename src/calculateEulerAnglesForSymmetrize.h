@@ -16,9 +16,9 @@ struct Mesh
     std::vector<Index> G;
 };
 
-bool calculateSymmetricPlane(
+bool calculateEulerAnglesForSymmetrize(
 	const Mesh<double, int> &meshIn,
     Eigen::Matrix<double, 1, Eigen::Dynamic> &eulerXZY,
     Eigen::Matrix<double, 1, Eigen::Dynamic> &translateXYZ);
 
-#include "calculateSymmetricPlane.cpp"
+#include "calculateEulerAnglesForSymmetrize.cpp"

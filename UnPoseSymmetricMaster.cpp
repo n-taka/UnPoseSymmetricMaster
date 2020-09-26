@@ -4,7 +4,7 @@
 #include <string>
 #include <filesystem>
 #include "readGoZFile.h"
-#include "calculateSymmetricPlane.h"
+#include "calculateEulerAnglesForSymmetrize.h"
 #include "writeGoZFile.h"
 
 ////
@@ -30,58 +30,39 @@ extern "C" DLLEXPORT float computeRotation(char *someText, double optValue, char
 		char c[sizeof(float)];
 		float f;
 	} loader;
-	memcpy(loader.c, outputBuffer, sizeof(float));
-	double height = static_cast<float>(loader.f);
-	memcpy(loader.c, outputBuffer + sizeof(float), sizeof(float));
-	double minClearance = static_cast<float>(loader.f);
-	memcpy(loader.c, outputBuffer + sizeof(float) * 2, sizeof(float));
-	double maxClearance = static_cast<float>(loader.f);
-	double scale = -1.0;
 
 	{
 		Mesh<double, int> mesh;
 		FromZ::readGoZFile(inputGoZFileName.string(), mesh.meshName, mesh.V, mesh.F, mesh.UV, mesh.VC, mesh.M, mesh.G);
-		Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V;
-		igl::list_to_matrix(mesh.V, V);
-		double maxY, minY;
-		maxY = V.col(1).maxCoeff();
-		minY = V.col(1).minCoeff();
-		if (maxY <= minY)
+
+		Eigen::Matrix<double, 1, Eigen::Dynamic> eulerXYZ;
+		Eigen::Matrix<double, 1, Eigen::Dynamic> translateXYZ;
+		if (calculateEulerAnglesForSymmetrize(mesh, eulerXYZ, translateXYZ))
+		{
+			eulerXYZ *= 180.0;
+			eulerXYZ /= M_PI;
+			// I don't fully understand, but eulerAngles in Eigen is left-handed?
+			eulerXYZ(2) *= -1;
+			// std::ofstream log("log.txt");
+			// log << eulerXYZ << std::endl;
+			// log.close();
+			loader.f = static_cast<float>(eulerXYZ(0));
+			memcpy(outputBuffer, loader.c, sizeof(float));
+			loader.f = static_cast<float>(eulerXYZ(1));
+			memcpy(outputBuffer + sizeof(float), loader.c, sizeof(float));
+			loader.f = static_cast<float>(eulerXYZ(2));
+			memcpy(outputBuffer + sizeof(float) * 2, loader.c, sizeof(float));
+			loader.f = static_cast<float>(translateXYZ(0));
+			memcpy(outputBuffer + sizeof(float) * 3, loader.c, sizeof(float));
+			loader.f = static_cast<float>(translateXYZ(1));
+			memcpy(outputBuffer + sizeof(float) * 4, loader.c, sizeof(float));
+			loader.f = static_cast<float>(translateXYZ(2));
+			memcpy(outputBuffer + sizeof(float) * 5, loader.c, sizeof(float));
+			return 1.0f;
+		}
+		else
 		{
 			return 0.0f;
 		}
-		scale = height / (maxY - minY);
 	}
-
-	std::filesystem::path inputGoZFileDir = inputGoZFileName.parent_path();
-	std::vector<Mesh<double, int>> meshIn, meshOut;
-
-	for (const std::filesystem::directory_entry &x : std::filesystem::directory_iterator(inputGoZFileDir))
-	{
-		if (x.path().extension() == ".GoZ")
-		{
-			Mesh<double, int> mesh;
-			FromZ::readGoZFile(x.path().string(), mesh.meshName, mesh.V, mesh.F, mesh.UV, mesh.VC, mesh.M, mesh.G);
-			meshIn.push_back(mesh);
-		}
-	}
-
-	calculateClearance(meshIn, minClearance, maxClearance, scale, meshOut);
-
-	int meshIdx = 0;
-	for (const std::filesystem::directory_entry &x : std::filesystem::directory_iterator(inputGoZFileDir))
-	{
-		if (x.path().extension() == ".GoZ")
-		{
-			std::filesystem::path output = x.path().parent_path();
-			output /= x.path().stem();
-			output += ".GoZ";
-
-			const Mesh<double, int> &mesh = meshOut.at(meshIdx++);
-
-			FromZ::writeGoZFile(output.string(), mesh.meshName, mesh.V, mesh.F, mesh.UV, mesh.VC, mesh.M, mesh.G);
-		}
-	}
-
-	return 1.0f;
 }
