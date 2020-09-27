@@ -78,6 +78,12 @@ extern "C" DLLEXPORT float isCached(char *someText, double optValue, char *outpu
 
 extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, char *outputBuffer, int optBuffer1Size, char *pOptBuffer2, int optBuffer2Size, char **zData)
 {
+	union
+	{
+		char c[sizeof(float)];
+		float f;
+	} loader;
+
 	// find and parse tmp file
 	web::json::value json;
 	std::filesystem::path cache = std::filesystem::temp_directory_path();
@@ -126,12 +132,14 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 		std::filesystem::remove_all(inputGoZFileName);
 
 		Eigen::Matrix<double, 3, 3> rotMatrix;
-		if (calculateEulerAnglesForSymmetrize(mesh, rotMatrix))
+		double reflectionX;
+		if (calculateEulerAnglesForSymmetrize(mesh, rotMatrix, reflectionX))
 		{
 			eulerZYX = rotMatrix.eulerAngles(2, 1, 0);
 			invEulerZYX.setZero();
 
 			translateXYZ.setZero();
+			translateXYZ(0) = reflectionX;
 		}
 		else
 		{
@@ -139,11 +147,6 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 		}
 	}
 
-	union
-	{
-		char c[sizeof(float)];
-		float f;
-	} loader;
 	web::json::value update;
 	{
 		float posX, posY, posZ, extraRotX;

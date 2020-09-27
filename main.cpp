@@ -20,12 +20,14 @@ void main(int argc, char *argv[])
             char c[sizeof(float)];
             float f;
         } loader;
-        loader.f = 1.0f;
+        loader.f = -0.83858f;
+        memcpy(outputBuffer + sizeof(float) * 0, loader.c, sizeof(float));
+        loader.f = -0.59394f;
+        memcpy(outputBuffer + sizeof(float) * 1, loader.c, sizeof(float));
+        loader.f = -0.39954f;
+        memcpy(outputBuffer + sizeof(float) * 2, loader.c, sizeof(float));
+        loader.f = 2.08389f;
         memcpy(outputBuffer + sizeof(float) * 3, loader.c, sizeof(float));
-        loader.f = 2.0f;
-        memcpy(outputBuffer + sizeof(float) * 4, loader.c, sizeof(float));
-        loader.f = -4.5f;
-        memcpy(outputBuffer + sizeof(float) * 5, loader.c, sizeof(float));
 
         sprintf(fileName, "%s", inputGoZFileName.string().c_str());
         initialize(fileName, 0.0f, outputBuffer, 0, dummyBuffer, 0, dummyBuffer1);

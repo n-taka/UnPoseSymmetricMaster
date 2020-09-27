@@ -423,14 +423,15 @@ namespace
 
 bool calculateEulerAnglesForSymmetrize(
     const Mesh<double, int> &meshIn,
-    Eigen::Matrix<double, 3, 3> &rotMatrix)
+    Eigen::Matrix<double, 3, 3> &rotMatrix,
+    double &reflectionX)
 {
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V, VRaw;
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> F, F_;
-    igl::list_to_matrix(meshIn.V, V);
+    igl::list_to_matrix(meshIn.V, VRaw);
     // avoid too small input
-    double ratio = 100.0 / (V.colwise().maxCoeff() - V.colwise().minCoeff()).norm();
-    V *= ratio;
+    double ratio = 100.0 / (VRaw.colwise().maxCoeff() - VRaw.colwise().minCoeff()).norm();
+    VRaw *= ratio;
 
     igl::polygon_mesh_to_triangle_mesh(meshIn.F, F_);
 
@@ -458,9 +459,8 @@ bool calculateEulerAnglesForSymmetrize(
         F.row(f) = F_.row(maskedF.at(f));
     }
     Eigen::Matrix<int, Eigen::Dynamic, 1> I;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V_ = V;
     F_ = F;
-    igl::remove_unreferenced(V_, F_, V, F, I);
+    igl::remove_unreferenced(VRaw, F_, V, F, I);
     // igl::writeOBJ("masked.obj", V, F);
 
     ////
@@ -523,7 +523,6 @@ bool calculateEulerAnglesForSymmetrize(
             tmpV.row(v * 2 + 1) = V.row(transformation.at(v).vj);
             tmpE.row(v) << v * 2 + 0, v * 2 + 1;
         }
-        std::cout << std::endl;
         // igl::writePLY("pairs.ply", tmpV, tmpF, tmpE);
     }
 
@@ -545,22 +544,16 @@ bool calculateEulerAnglesForSymmetrize(
     estimateBestPlane(V, F, transformation, indices.at(0), point, normal);
 
     // move to center
-    // V.rowwise() -= point;
+    VRaw.rowwise() -= point;
     const Eigen::Quaternion<double> q = Eigen::Quaternion<double>::FromTwoVectors(Eigen::Vector3d::UnitX(), normal);
 
     rotMatrix = q.normalized().toRotationMatrix();
-    
-    // // V = (V * q.toRotationMatrix());
-    // Eigen::AngleAxisd m0(eulerXYZ(0), Eigen::Vector3d::UnitX());
-    // Eigen::AngleAxisd m1(eulerXYZ(1), Eigen::Vector3d::UnitY());
-    // Eigen::AngleAxisd m2(eulerXYZ(2), Eigen::Vector3d::UnitZ());
-    // V *= m0.toRotationMatrix();
-    // V *= m1.toRotationMatrix();
-    // V *= m2.toRotationMatrix();
-    // V /= ratio;
 
-    // std::cout << q.normalized().toRotationMatrix() << std::endl;
-    // std::cout << m0.toRotationMatrix() * m1.toRotationMatrix() * m2.toRotationMatrix() << std::endl;
+    VRaw *= rotMatrix;
+    VRaw /= ratio;
+
+    reflectionX = (VRaw.col(0).maxCoeff() + VRaw.col(0).minCoeff()) * 0.5;
+    // V.col(0).array() -= reflectionX;
 
     // igl::writeOBJ("symmetrized.obj", V, F);
 
