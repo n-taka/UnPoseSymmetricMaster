@@ -50,7 +50,7 @@
     // check if there are dll/lib exists
     [If, [FileExists, [Var,dllPath]],
     , // else no DLL.
-    [Note,"\Cff9923Note :\Cc0c0c0 The \Cff9923 UnPoseSymmetricMaster plugin \Cffffffdll/lib\Cc0c0c0 could not be found at the correct location.  Please re-install the plugin, making sure the relevant files and folders are in the \CffffffZStartup/ZPlugs\Cc0c0c0 folder."]
+    [Note,"\Cff9923Note :\Cc0c0c0 The \Cff9923 UnPoseSymmetricMaster plugin \Cffffffdll/lib\Cc0c0c0 could not be found at the correct location.  Please re-install the plugin."]
     [Exit]
     ]
 ]
