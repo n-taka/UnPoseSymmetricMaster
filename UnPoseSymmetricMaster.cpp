@@ -52,8 +52,14 @@ extern "C" DLLEXPORT float isCached(char *someText, double optValue, char *outpu
 		ifs.close();
 	}
 
-	// parse parameters
+// parse parameters
+#if defined(_WIN32) || defined(_WIN64)
 	std::filesystem::path inputGoZFileName(someText);
+#else
+	// for macOS, zsc adds meaningless prefix
+	std::string tmpStr(someText);
+	std::filesystem::path inputGoZFileName(tmpStr.substr(2));
+#endif
 	utility::string_t key;
 	{
 		std::string fileName = inputGoZFileName.filename().string();
@@ -84,8 +90,14 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 		ifs.close();
 	}
 
-	// parse parameters
+// parse parameters
+#if defined(_WIN32) || defined(_WIN64)
 	std::filesystem::path inputGoZFileName(someText);
+#else
+	// for macOS, zsc adds meaningless prefix
+	std::string tmpStr(someText);
+	std::filesystem::path inputGoZFileName(tmpStr.substr(2));
+#endif
 	utility::string_t key;
 	{
 		std::string fileName = inputGoZFileName.filename().string();
