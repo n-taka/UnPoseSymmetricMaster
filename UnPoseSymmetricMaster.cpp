@@ -110,6 +110,9 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 		Mesh<double, int> mesh;
 		FromZ::readGoZFile(inputGoZFileName.string(), mesh.meshName, mesh.V, mesh.F, mesh.UV, mesh.VC, mesh.M, mesh.G);
 
+		// remove temporary file
+		std::filesystem::remove_all(inputGoZFileName);
+
 		Eigen::Matrix<double, 3, 3> rotMatrix;
 		if (calculateEulerAnglesForSymmetrize(mesh, rotMatrix))
 		{
