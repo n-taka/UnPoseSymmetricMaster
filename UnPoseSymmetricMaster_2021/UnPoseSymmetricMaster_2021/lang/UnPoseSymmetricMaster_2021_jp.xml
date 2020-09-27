@@ -1,0 +1,13 @@
+<buttons>
+  <button path="ZPlugin:UnPoseSymmetric Master">
+    <title text="UnPoseSymmetric Master" trans=""/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Rotate X">
+    <title text="Rotate X" trans="X軸まわりに回転"/>
+    <info text="Rotate with X axis (for Symmetry)" trans="X軸まわりに回転します (左右対称のみ)"/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Toggle Posed <=> Symmetry">
+    <title text="Toggle Posed <=> Symmetry" trans="ポーズ状態<=>左右対称状態 切り替え"/>
+    <info text="Toggle Posed posture and Symmetry posture." trans="ポーズ状態と左右対称状態を切り替えます"/>
+  </button>
+</buttons>

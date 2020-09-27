@@ -7,9 +7,9 @@
 [VarDef, language]
 ////
 // debug
-[VarDef, dataDirPath, [fileNameResolvePath, "UnPoseSymmetricMaster_2020\"]]
+[VarDef, dataDirPath, [fileNameResolvePath, "UnPoseSymmetricMaster_2021\"]]
 // install
-//[VarDef, dataDirPath, [fileNameResolvePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\"]]
+//[VarDef, dataDirPath, [fileNameResolvePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\"]]
 ////
 
 // value for calculation
@@ -30,15 +30,22 @@
     // Make sure we have the dll and set its path
     [If, [ZBrushInfo, 6]==0,//windows
         //use the path below for testing only
-        [VarSet, dllPath, "UnPoseSymmetricMaster_2020\unPoseSymmetricMaster.dll"]
-        [VarSet, zfutilPath, "UnPoseSymmetricMaster_2020\ZFileUtils64.dll"]
-        [VarSet, enLangFilePath, "UnPoseSymmetricMaster_2020\lang\UnPoseSymmetricMaster_2020_en.xml"]
+        //[VarSet, dllPath, "UnPoseSymmetricMaster_2021\unPoseSymmetricMaster.dll"]
+        //[VarSet, zfutilPath, "UnPoseSymmetricMaster_2021\ZFileUtils64.dll"]
+        //[VarSet, enLangFilePath, "UnPoseSymmetricMaster_2021\lang\UnPoseSymmetricMaster_2021_en.xml"]
         //use the path below for installed plugins
-        //[VarSet, dllPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\unPoseSymmetricMaster.dll"]
-        //[VarSet, zfutilPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\ZFileUtils64.dll"]
-        //[VarSet, enLangFilePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2020\lang\UnPoseSymmetricMaster_2020_en.xml"]
+        [VarSet, dllPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\unPoseSymmetricMaster.dll"]
+        [VarSet, zfutilPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\ZFileUtils64.dll"]
+        [VarSet, enLangFilePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\lang\UnPoseSymmetricMaster_2021_en.xml"]
         ,
-        // no support for macOS for this plugins
+        //use the path below for testing only
+        //[VarSet, dllPath, "UnPoseSymmetricMaster_2021\unPoseSymmetricMaster.lib"]
+        //[VarSet, zfutilPath, "UnPoseSymmetricMaster_2021\ZFileUtils.lib"]
+        //[VarSet, enLangFilePath, "UnPoseSymmetricMaster_2021\lang\UnPoseSymmetricMaster_2021_en.xml"]
+        //use the path below for installed plugins
+        [VarSet, dllPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\unPoseSymmetricMaster.lib"]
+        [VarSet, zfutilPath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\ZFileUtils.lib"]
+        [VarSet, enLangFilePath, "ZBRUSH_ZSTARTUP\ZPlugs64\UnPoseSymmetricMaster_2021\lang\UnPoseSymmetricMaster_2021_en.xml"]
     ]
     // check if there are dll/lib exists
     [If, [FileExists, [Var,dllPath]],

@@ -1,0 +1,13 @@
+<buttons>
+  <button path="ZPlugin:UnPoseSymmetric Master">
+    <title text="UnPoseSymmetric Master" trans=""/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Rotate X">
+    <title text="Rotate X" trans=""/>
+    <info text="Rotate with X axis (for Symmetry)" trans=""/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Toggle Posed <=> Symmetry">
+    <title text="Toggle Posed <=> Symmetry" trans=""/>
+    <info text="Toggle Posed posture and Symmetry posture." trans=""/>
+  </button>
+</buttons>
