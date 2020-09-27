@@ -64,11 +64,23 @@ endif()
 ###########################
 ##### Libraries       #####
 ###########################
-set(LINK_LIBS
-    Eigen3::Eigen
-    cpprestsdk::cpprest
-    cpprestsdk::cpprestsdk_zlib_internal cpprestsdk::cpprestsdk_brotli_internal
-)
+if(WIN32)
+    set(LINK_LIBS
+        Eigen3::Eigen
+        cpprestsdk::cpprest
+        cpprestsdk::cpprestsdk_zlib_internal
+        cpprestsdk::cpprestsdk_brotli_internal
+    )
+elseif (APPLE)
+    set(LINK_LIBS
+        Eigen3::Eigen
+        cpprestsdk::cpprest
+        cpprestsdk::cpprestsdk_zlib_internal
+        cpprestsdk::cpprestsdk_boost_internal
+        cpprestsdk::cpprestsdk_openssl_internal
+    )
+endif ()
+
 ###########################
 ##### Libraries (end) #####
 ###########################
@@ -88,20 +100,24 @@ target_link_libraries(${PROJECT} PRIVATE ${LINK_LIBS})
 
 if(WIN32)
 set(
+    MY_RELEASE_OPTIONS
+    /O2
+    /MT
+)
+set(
     MY_DEBUG_OPTIONS
     -bigobj
 )
 elseif (APPLE)
 set(
+    MY_RELEASE_OPTIONS
+    -O2
+)
+set(
     MY_DEBUG_OPTIONS
     -g
 )
 endif ()
-set(
-    MY_RELEASE_OPTIONS
-    /O2
-    /MT
-)
 
 target_compile_options(${PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:${MY_DEBUG_OPTIONS}>")
 target_compile_options(${PROJECT} PUBLIC "$<$<CONFIG:RELEASE>:${MY_RELEASE_OPTIONS}>")
