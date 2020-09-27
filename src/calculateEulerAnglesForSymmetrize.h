@@ -18,7 +18,6 @@ struct Mesh
 
 bool calculateEulerAnglesForSymmetrize(
 	const Mesh<double, int> &meshIn,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &eulerXZY,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &translateXYZ);
+    Eigen::Matrix<double, 3, 3> &rotMatrix);
 
 #include "calculateEulerAnglesForSymmetrize.cpp"

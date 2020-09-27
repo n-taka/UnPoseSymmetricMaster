@@ -155,6 +155,7 @@ namespace
                     continue;
                 }
 
+#if 0
                 // calculate transformation
                 {
                     Transformation t;
@@ -181,6 +182,7 @@ namespace
                     transformation.push_back(t);
                     // sigPairs.push_back(std::make_pair(signQ.index, signP.index));
                 }
+#endif
                 // calculate transformation (with reflection)
                 {
                     Signature signQReflect = signQ;
@@ -421,8 +423,7 @@ namespace
 
 bool calculateEulerAnglesForSymmetrize(
     const Mesh<double, int> &meshIn,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &eulerXYZ,
-    Eigen::Matrix<double, 1, Eigen::Dynamic> &translateXYZ)
+    Eigen::Matrix<double, 3, 3> &rotMatrix)
 {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V;
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> F, F_;
@@ -547,16 +548,15 @@ bool calculateEulerAnglesForSymmetrize(
     // V.rowwise() -= point;
     const Eigen::Quaternion<double> q = Eigen::Quaternion<double>::FromTwoVectors(Eigen::Vector3d::UnitX(), normal);
 
-    eulerXYZ = q.normalized().toRotationMatrix().eulerAngles(0, 1, 2).transpose();
-    translateXYZ = point;
-
-    // V = (V * q.toRotationMatrix());
-    Eigen::AngleAxisd m0(eulerXYZ(0), Eigen::Vector3d::UnitX());
-    Eigen::AngleAxisd m1(eulerXYZ(1), Eigen::Vector3d::UnitY());
-    Eigen::AngleAxisd m2(eulerXYZ(2), Eigen::Vector3d::UnitZ());
-    V *= m0.toRotationMatrix();
-    V *= m1.toRotationMatrix();
-    V *= m2.toRotationMatrix();
+    rotMatrix = q.normalized().toRotationMatrix();
+    
+    // // V = (V * q.toRotationMatrix());
+    // Eigen::AngleAxisd m0(eulerXYZ(0), Eigen::Vector3d::UnitX());
+    // Eigen::AngleAxisd m1(eulerXYZ(1), Eigen::Vector3d::UnitY());
+    // Eigen::AngleAxisd m2(eulerXYZ(2), Eigen::Vector3d::UnitZ());
+    // V *= m0.toRotationMatrix();
+    // V *= m1.toRotationMatrix();
+    // V *= m2.toRotationMatrix();
     // V /= ratio;
 
     // std::cout << q.normalized().toRotationMatrix() << std::endl;

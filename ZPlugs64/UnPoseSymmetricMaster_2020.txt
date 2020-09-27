@@ -14,6 +14,7 @@
 
 // value for calculation
 [MVarDef, memInOut, [Val, 1024*1024], 0]
+[VarDef, rotX, 0]
 
 //////
 // search dlls
@@ -48,7 +49,6 @@
 ]
 //////
 
-
 //////
 // translation routine
 // from http://docs.pixologic.com/user-guide/customizing-zbrush/zscripting/zfileutils/localization/
@@ -65,29 +65,27 @@
 [RoutineCall, CheckSystem]
 //[RoutineCall, ZFU_GetCurrentLanguage, language]
 [RoutineCall, ZFU_RegisterLocalizationFile, [FileNameResolvePath, [Var, enLangFilePath]]]
+[FileExecute, [Var, dllPath], "initialize", "", 0, memInOut, ]
 
 //////
 // UI
 //////
 [ISubPalette, "ZPlugin:UnPoseSymmetric Master"]
 
-[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0.0, 0.001, -180.0, 180.0, "Rotate (X)",
-    [ISet, "Tool:Deformation:Rotate X", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
-    // update internal value...
-    ,
-    0,
-    1
-]
-[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate Z", 0.0, 0.001, -180.0, 180.0, "Rotate (Z)",
-    [ISet, "Tool:Deformation:Rotate Z", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate Z"]]
+[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0.0, 0.001, -180.0, 180.0, "Rotate with X axis (for Symmetry)",
+    [VarSet, currentRotMod, [IModGet, "Tool:Deformation:Rotate"]]
+    [IModSet, "Tool:Deformation:Rotate", 1]
+    [ISet, "Tool:Deformation:Rotate", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
+    [IModSet, "Tool:Deformation:Rotate", [Var, currentRotMod]]
+    [VarSet, rotX, [Var, rotX] + [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
+    [ISet, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0]
     // update internal value...
     ,
     0,
     1
 ]
 
-
-[IButton, "ZPlugin:UnPoseSymmetric Master:Initialize", "Initialize for selected subtool",
+[IButton, "ZPlugin:UnPoseSymmetric Master:Toggle Posed <=> Symmetry", "Toggle Posed posture and Symmetry posture.",
     [If, [IExists, Tool:Export],
         [IFreeze,
             [RoutineCall, CheckSystem]
@@ -110,61 +108,83 @@
             [VarSet, subTName, [IGetTitle,Tool:ItemInfo]] // gets the tool name
             [VarSet, activeSubTName, [StrExtract, #subTName, 0, [StrLength, #subTName]-2]] // this takes of the end period
 
-            // export current subtool to GoZ file (temporary file)
-            [FileNameSetNext, [StrMerge, [Var, dataDirPath], #activeSubTName, ".GoZ"]]
+            // text for dll
+            [VarSet, textForDll, [StrMerge, [Var, dataDirPath], [Var, activeSubTName], ".GoZ"]]
 
-            // store current export settings
-            [VarSet, origScale, [IGet,Tool:Export:Scale]]
-            [VarSet, origOffsetX, [IGet,Tool:Export:X Offset]]
-            [VarSet, origOffsetY, [IGet,Tool:Export:Y Offset]]
-            [VarSet, origOffsetZ, [IGet,Tool:Export:Z Offset]]
-            [ISet,Tool:Export:Scale,0.0]
-            [ISet,Tool:Export:X Offset,0.0]
-            [ISet,Tool:Export:Y Offset,0.0]
-            [ISet,Tool:Export:Z Offset,0.0]
             // store current position
             [VarSet, posX, [IGet,Tool:Geometry:X Position]]
             [VarSet, posY, [IGet,Tool:Geometry:Y Position]]
             [VarSet, posZ, [IGet,Tool:Geometry:Z Position]]
-            // store current size
-            [VarSet, sizeX, [IGet,Tool:Geometry:X Size]]
-            [VarSet, sizeY, [IGet,Tool:Geometry:Y Size]]
-            [VarSet, sizeZ, [IGet,Tool:Geometry:Z Size]]
 
-            [IPress,Tool:Export]
+            [If, [FileExecute, [Var, dllPath], "isCached", #textForDll, 0, memInOut, ],
+                // if the rotation is cached, do noting!
+            ,
+                // export current subtool to GoZ file (temporary file)
+                [FileNameSetNext, [StrMerge, [Var, dataDirPath], #activeSubTName, ".GoZ"]]
 
-            // restore scale/Offset
-            [ISet,Tool:Export:Scale,[Var, origScale]]
-            [ISet,Tool:Export:X Offset,[Var, origOffsetX]]
-            [ISet,Tool:Export:Y Offset,[Var, origOffsetY]]
-            [ISet,Tool:Export:Z Offset,[Var, origOffsetZ]]
+                // store current export settings
+                [VarSet, origScale, [IGet,Tool:Export:Scale]]
+                [VarSet, origOffsetX, [IGet,Tool:Export:X Offset]]
+                [VarSet, origOffsetY, [IGet,Tool:Export:Y Offset]]
+                [VarSet, origOffsetZ, [IGet,Tool:Export:Z Offset]]
+                [ISet,Tool:Export:Scale,0.0]
+                [ISet,Tool:Export:X Offset,0.0]
+                [ISet,Tool:Export:Y Offset,0.0]
+                [ISet,Tool:Export:Z Offset,0.0]
+                // store current size
+                [VarSet, sizeX, [IGet,Tool:Geometry:X Size]]
+                [VarSet, sizeY, [IGet,Tool:Geometry:Y Size]]
+                [VarSet, sizeZ, [IGet,Tool:Geometry:Z Size]]
 
-            // text for dll
-            [VarSet, textForDll, [StrMerge, [Var, dataDirPath], [Var, activeSubTName], ".GoZ"]]
+                [IPress,Tool:Export]
+
+                // restore scale/Offset
+                [ISet,Tool:Export:Scale,[Var, origScale]]
+                [ISet,Tool:Export:X Offset,[Var, origOffsetX]]
+                [ISet,Tool:Export:Y Offset,[Var, origOffsetY]]
+                [ISet,Tool:Export:Z Offset,[Var, origOffsetZ]]
+
+            ]
 
             // write parameters to memblock
-            [VarSet, result, [FileExecute, [Var, dllPath], "computeRotation", #textForDll, 0, memInOut, ]]
+            [MVarSet, memInOut, 0, [Var, rotX]]
+            [MVarSet, memInOut, 1, [Var, posX]]
+            [MVarSet, memInOut, 2, [Var, posY]]
+            [MVarSet, memInOut, 3, [Var, posZ]]
+            [VarSet, rotX, 0]
+
+            [VarSet, result, [FileExecute, [Var, dllPath], "getCachedRotation", #textForDll, 0, memInOut, ]]
         ]
 
         [If, result,
             [IFreeze,
                 [IClick, "Tool:Masking:Clear"]
                 // read parameters from memblock
-                [Iset, "Tool:Geometry:Position:X Position", 0]
-                [Iset, "Tool:Geometry:Position:Y Position", 0]
-                [Iset, "Tool:Geometry:Position:Z Position", 0]
-                [IModSet, "Tool:Deformation:Rotate", 1]
+                [VarSet, currentRotMod, [IModGet, "Tool:Deformation:Rotate"]]
+                // pose -> symmetry
+                [IModSet, "Tool:Deformation:Rotate", 4]
                 [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 0]]
                 [IModSet, "Tool:Deformation:Rotate", 2]
                 [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 1]]
-                [IModSet, "Tool:Deformation:Rotate", 4]
+                [IModSet, "Tool:Deformation:Rotate", 1]
                 [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 2]]
-                // [Iset, "Tool:Geometry:Position:X Position", [Var, posX]]
-                // [Iset, "Tool:Geometry:Position:Y Position", [Var, posY]]
-                // [Iset, "Tool:Geometry:Position:Z Position", [Var, posZ]]
+
+                // symmetry -> pose
+                [IModSet, "Tool:Deformation:Rotate", 1]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 5]]
+                [IModSet, "Tool:Deformation:Rotate", 2]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 4]]
+                [IModSet, "Tool:Deformation:Rotate", 4]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 3]]
+
+                [IModSet, "Tool:Deformation:Rotate", [Var, currentRotMod]]
+
+                [Iset, "Tool:Geometry:Position:X Position", [MVarGet, memInOut, 6]]
+                [Iset, "Tool:Geometry:Position:Y Position", [MVarGet, memInOut, 7]]
+                [Iset, "Tool:Geometry:Position:Z Position", [MVarGet, memInOut, 8]]
             ]
         ,
-            [Note, "Sorry, there is some error..."]
+            [Note, "Sorry, there is some error. Perhaps, you forget masking the symmetric region."]
         ]
     ]
     ,

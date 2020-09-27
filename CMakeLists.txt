@@ -24,6 +24,11 @@ endif()
 ###
 find_package(Eigen3 3.3 REQUIRED)
 
+###
+# cpprestsdk (for json)
+###
+find_package(cpprestsdk CONFIG REQUIRED)
+
 ##############################
 ##### Dependencies (end) #####
 ##############################
@@ -43,6 +48,7 @@ if(BUILD_EXE)
     # Target for this build
     set(CPP_FILES
         main.cpp
+        UnPoseSymmetricMaster.cpp
     )
 else()
     # Create shared library
@@ -60,6 +66,8 @@ endif()
 ###########################
 set(LINK_LIBS
     Eigen3::Eigen
+    cpprestsdk::cpprest
+    cpprestsdk::cpprestsdk_zlib_internal cpprestsdk::cpprestsdk_brotli_internal
 )
 ###########################
 ##### Libraries (end) #####
@@ -98,6 +106,7 @@ set(
 target_compile_options(${PROJECT} PUBLIC "$<$<CONFIG:DEBUG>:${MY_DEBUG_OPTIONS}>")
 target_compile_options(${PROJECT} PUBLIC "$<$<CONFIG:RELEASE>:${MY_RELEASE_OPTIONS}>")
 target_compile_features(${PROJECT} PUBLIC cxx_std_17)
+target_compile_definitions(${PROJECT} PUBLIC _TURN_OFF_PLATFORM_STRING)
 target_compile_definitions(${PROJECT} PUBLIC _USE_MATH_DEFINES)
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244")

@@ -41,7 +41,7 @@ else
         # echo "bind ./submodule as X:"
         subst X: ./submodule
 
-        X:/vcpkg/vcpkg install "eigen3:${triplet}"
+        X:/vcpkg/vcpkg install "eigen3:${triplet}" "cpprestsdk:${triplet}"
 
 
         # revert subst command
@@ -50,7 +50,7 @@ else
         subst X: //D
     else
         # install/build dependencied
-        submodule/vcpkg/vcpkg install "eigen3:${triplet}"
+        submodule/vcpkg/vcpkg install "eigen3:${triplet}" "cpprestsdk:${triplet}"
     fi
 fi
 

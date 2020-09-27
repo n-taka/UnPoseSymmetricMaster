@@ -2,7 +2,7 @@
 #include <string>
 #include <filesystem>
 #include "readGoZFile.h"
-#include "calculateEulerAnglesForSymmetrize.h"
+#include "UnPoseSymmetricMaster.h"
 #include "igl/writeOBJ.h"
 #include "Eigen/Geometry"
 
@@ -11,21 +11,25 @@ void main(int argc, char *argv[])
     if (argc >= 2)
     {
         std::filesystem::path inputGoZFileName(argv[1]);
-        Mesh<double, int> meshIn;
+        char fileName[1024];
+        char outputBuffer[1024];
+        char dummyBuffer[1024];
+        char **dummyBuffer1;
+        union
+        {
+            char c[sizeof(float)];
+            float f;
+        } loader;
+        loader.f = 1.0f;
+        memcpy(outputBuffer + sizeof(float) * 3, loader.c, sizeof(float));
+        loader.f = 2.0f;
+        memcpy(outputBuffer + sizeof(float) * 4, loader.c, sizeof(float));
+        loader.f = -4.5f;
+        memcpy(outputBuffer + sizeof(float) * 5, loader.c, sizeof(float));
 
-        FromZ::readGoZFile(inputGoZFileName.string(), meshIn.meshName, meshIn.V, meshIn.F, meshIn.UV, meshIn.VC, meshIn.M, meshIn.G);
-
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V;
-        Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> F;
-        igl::list_to_matrix(meshIn.V, V);
-        igl::polygon_mesh_to_triangle_mesh(meshIn.F, F);
-
-        // igl::writeOBJ("in.obj", V, F);
-
-        Eigen::Matrix<double, 1, Eigen::Dynamic> eulerXZY;
-        Eigen::Matrix<double, 1, Eigen::Dynamic> translateXYZ;
-        calculateEulerAnglesForSymmetrize(meshIn, eulerXZY, translateXYZ);
-
+        sprintf(fileName, "%s", inputGoZFileName.string().c_str());
+        initialize(fileName, 0.0f, outputBuffer, 0, dummyBuffer, 0, dummyBuffer1);
+        getCachedRotation(fileName, 0.0f, outputBuffer, 0, dummyBuffer, 0, dummyBuffer1);
     }
     else
     {
