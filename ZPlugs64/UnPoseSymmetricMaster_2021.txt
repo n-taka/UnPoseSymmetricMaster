@@ -15,6 +15,13 @@
 // value for calculation
 [MVarDef, memInOut, [Val, 1024*1024], 0]
 [VarDef, rotX, 0]
+[VarDef, posX]
+[VarDef, posY]
+[VarDef, posZ]
+[VarDef, sizeX]
+[VarDef, sizeY]
+[VarDef, sizeZ]
+
 
 //////
 // search dlls
@@ -102,13 +109,6 @@
             [VarSet, activeSubT, [SubToolGetActiveIndex]]
             [VarSet, activeSubTName, ""]
 
-            [VarDef, posX]
-            [VarDef, posY]
-            [VarDef, posZ]
-            [VarDef, sizeX]
-            [VarDef, sizeY]
-            [VarDef, sizeZ]
-
             // select active subtool
             [SubToolSelect, [Var, activeSubT]]
 
@@ -155,9 +155,6 @@
 
             // write parameters to memblock
             [MVarSet, memInOut, 0, [Var, rotX]]
-            [MVarSet, memInOut, 1, [Var, posX]]
-            [MVarSet, memInOut, 2, [Var, posY]]
-            [MVarSet, memInOut, 3, [Var, posZ]]
             [VarSet, rotX, 0]
 
             [VarSet, result, [FileExecute, [Var, dllPath], "getCachedRotation", #textForDll, 0, memInOut, ]]
@@ -168,27 +165,34 @@
                 [IClick, "Tool:Masking:Clear"]
                 // read parameters from memblock
                 [VarSet, currentRotMod, [IModGet, "Tool:Deformation:Rotate"]]
-                // pose -> symmetry
+                // pose <=> symmetry
                 [IModSet, "Tool:Deformation:Rotate", 4]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 0]]
+                [ISet, "Tool:Deformation:Rotate", [MVarGet, memInOut, 0]]
                 [IModSet, "Tool:Deformation:Rotate", 2]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 1]]
+                [ISet, "Tool:Deformation:Rotate", [MVarGet, memInOut, 1]]
                 [IModSet, "Tool:Deformation:Rotate", 1]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 2]]
+                [ISet, "Tool:Deformation:Rotate", [MVarGet, memInOut, 2] + [MVarGet, memInOut, 7]]
 
-                // symmetry -> pose
+                // translation
+                [VarSet, updatedXYZ, [Val, [MVarGet, memInOut, 8] + [IGet, "Tool:Geometry:Position:X Position"]]]
+                [ISet, "Tool:Geometry:Position:X Position", [Var, updatedXYZ]]
+                [VarSet, updatedXYZ, [Val, [MVarGet, memInOut, 9] + [IGet, "Tool:Geometry:Position:Y Position"]]]
+                [ISet, "Tool:Geometry:Position:Y Position", [Var, updatedXYZ]]
+                [VarSet, updatedXYZ, [Val, [MVarGet, memInOut, 10] + [IGet, "Tool:Geometry:Position:Z Position"]]]
+                [ISet, "Tool:Geometry:Position:Z Position", [Var, updatedXYZ]]
+
+                //[IModSet, "Tool:Deformation:Rotate", 1]
+                //[ISet, "Tool:Deformation:Rotate", [MVarGet, memInOut, 3]]
+
                 [IModSet, "Tool:Deformation:Rotate", 1]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 5]]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 3] + [MVarGet, memInOut, 6]]
                 [IModSet, "Tool:Deformation:Rotate", 2]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 4]]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 5]]
                 [IModSet, "Tool:Deformation:Rotate", 4]
-                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 3]]
+                [Iset, "Tool:Deformation:Rotate", [MVarGet, memInOut, 4]]
 
                 [IModSet, "Tool:Deformation:Rotate", [Var, currentRotMod]]
 
-                [Iset, "Tool:Geometry:Position:X Position", [MVarGet, memInOut, 6]]
-                [Iset, "Tool:Geometry:Position:Y Position", [MVarGet, memInOut, 7]]
-                [Iset, "Tool:Geometry:Position:Z Position", [MVarGet, memInOut, 8]]
             ]
         ,
             [Note, "Sorry, there is some error. Perhaps, you forget masking the symmetric region."]

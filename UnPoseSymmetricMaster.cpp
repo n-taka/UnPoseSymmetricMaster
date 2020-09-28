@@ -111,15 +111,18 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 	}
 
 	Eigen::Matrix<double, 3, 1> eulerZYX, invEulerZYX, eulerZYX_Zb, invEulerZYX_Zb;
-	Eigen::Matrix<double, 3, 1> translateXYZ;
+	Eigen::Matrix<double, 1, 3> translateXYZ, invTranslateXYZ;
+	double extraRotX = 0;
+	double invExtraRotX = 0;
 	if (json.has_field(key))
 	{
 		// hit
 		eulerZYX << json[key][_XPLATSTR("rotZ")].as_double(), json[key][_XPLATSTR("rotY")].as_double(), json[key][_XPLATSTR("rotX")].as_double();
-
 		invEulerZYX << json[key][_XPLATSTR("invRotZ")].as_double(), json[key][_XPLATSTR("invRotY")].as_double(), json[key][_XPLATSTR("invRotX")].as_double();
-
-		translateXYZ << json[key][_XPLATSTR("posX")].as_double(), json[key][_XPLATSTR("posY")].as_double(), json[key][_XPLATSTR("posZ")].as_double();
+		translateXYZ << json[key][_XPLATSTR("offX")].as_double(), json[key][_XPLATSTR("offY")].as_double(), json[key][_XPLATSTR("offZ")].as_double();
+		invTranslateXYZ << json[key][_XPLATSTR("invOffX")].as_double(), json[key][_XPLATSTR("invOffY")].as_double(), json[key][_XPLATSTR("invOffZ")].as_double();
+		extraRotX = json[key][_XPLATSTR("extraRotX")].as_double();
+		invExtraRotX = json[key][_XPLATSTR("invExtraRotX")].as_double();
 	}
 	else
 	{
@@ -132,14 +135,11 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 		std::filesystem::remove_all(inputGoZFileName);
 
 		Eigen::Matrix<double, 3, 3> rotMatrix;
-		double reflectionX;
-		if (calculateEulerAnglesForSymmetrize(mesh, rotMatrix, reflectionX))
+		if (calculateEulerAnglesForSymmetrize(mesh, rotMatrix, translateXYZ))
 		{
 			eulerZYX = rotMatrix.eulerAngles(2, 1, 0);
 			invEulerZYX.setZero();
-
-			translateXYZ.setZero();
-			translateXYZ(0) = reflectionX;
+			invTranslateXYZ.setZero();
 		}
 		else
 		{
@@ -148,24 +148,8 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 	}
 
 	web::json::value update;
-	{
-		float posX, posY, posZ, extraRotX;
-		memcpy(loader.c, outputBuffer + sizeof(float) * 0, sizeof(float));
-		extraRotX = loader.f;
-		memcpy(loader.c, outputBuffer + sizeof(float) * 1, sizeof(float));
-		posX = loader.f;
-		memcpy(loader.c, outputBuffer + sizeof(float) * 2, sizeof(float));
-		posY = loader.f;
-		memcpy(loader.c, outputBuffer + sizeof(float) * 3, sizeof(float));
-		posZ = loader.f;
-
-		update[_XPLATSTR("posX")] = web::json::value(posX);
-		update[_XPLATSTR("posY")] = web::json::value(posY);
-		update[_XPLATSTR("posZ")] = web::json::value(posZ);
-		// convert [degree] -> [rad]
-		extraRotX *= (M_PI / 180.0);
-		invEulerZYX(2) -= extraRotX;
-	}
+	memcpy(loader.c, outputBuffer + sizeof(float) * 0, sizeof(float));
+	invExtraRotX -= static_cast<double>(loader.f);
 
 	eulerZYX_Zb = eulerZYX;
 	eulerZYX_Zb *= 180.0;
@@ -185,28 +169,41 @@ extern "C" DLLEXPORT float getCachedRotation(char *someText, double optValue, ch
 	memcpy(outputBuffer + sizeof(float) * 1, loader.c, sizeof(float));
 	loader.f = static_cast<float>(eulerZYX_Zb(2));
 	memcpy(outputBuffer + sizeof(float) * 2, loader.c, sizeof(float));
+	loader.f = static_cast<float>(extraRotX);
+	memcpy(outputBuffer + sizeof(float) * 3, loader.c, sizeof(float));
 
 	// symmetry -> pose
 	loader.f = static_cast<float>(invEulerZYX_Zb(0));
-	memcpy(outputBuffer + sizeof(float) * 3, loader.c, sizeof(float));
-	loader.f = static_cast<float>(invEulerZYX_Zb(1));
 	memcpy(outputBuffer + sizeof(float) * 4, loader.c, sizeof(float));
-	loader.f = static_cast<float>(invEulerZYX_Zb(2));
+	loader.f = static_cast<float>(invEulerZYX_Zb(1));
 	memcpy(outputBuffer + sizeof(float) * 5, loader.c, sizeof(float));
-
-	loader.f = static_cast<float>(translateXYZ(0));
+	loader.f = static_cast<float>(invEulerZYX_Zb(2));
 	memcpy(outputBuffer + sizeof(float) * 6, loader.c, sizeof(float));
-	loader.f = static_cast<float>(translateXYZ(1));
+	loader.f = static_cast<float>(invExtraRotX);
 	memcpy(outputBuffer + sizeof(float) * 7, loader.c, sizeof(float));
-	loader.f = static_cast<float>(translateXYZ(2));
+
+	loader.f = static_cast<float>(translateXYZ(0) + invTranslateXYZ(0));
 	memcpy(outputBuffer + sizeof(float) * 8, loader.c, sizeof(float));
+	loader.f = static_cast<float>(translateXYZ(1) + invTranslateXYZ(1));
+	memcpy(outputBuffer + sizeof(float) * 9, loader.c, sizeof(float));
+	loader.f = static_cast<float>(translateXYZ(2) + invTranslateXYZ(2));
+	memcpy(outputBuffer + sizeof(float) * 10, loader.c, sizeof(float));
 
 	update[_XPLATSTR("rotZ")] = web::json::value(-invEulerZYX(0));
 	update[_XPLATSTR("rotY")] = web::json::value(-invEulerZYX(1));
 	update[_XPLATSTR("rotX")] = web::json::value(-invEulerZYX(2));
+	update[_XPLATSTR("extraRotX")] = web::json::value(-invExtraRotX);
 	update[_XPLATSTR("invRotZ")] = web::json::value(-eulerZYX(0));
 	update[_XPLATSTR("invRotY")] = web::json::value(-eulerZYX(1));
 	update[_XPLATSTR("invRotX")] = web::json::value(-eulerZYX(2));
+	update[_XPLATSTR("invExtraRotX")] = web::json::value(-extraRotX);
+	update[_XPLATSTR("offX")] = web::json::value(-invTranslateXYZ(0));
+	update[_XPLATSTR("offY")] = web::json::value(-invTranslateXYZ(1));
+	update[_XPLATSTR("offZ")] = web::json::value(-invTranslateXYZ(2));
+	update[_XPLATSTR("invOffX")] = web::json::value(-translateXYZ(0));
+	update[_XPLATSTR("invOffY")] = web::json::value(-translateXYZ(1));
+	update[_XPLATSTR("invOffZ")] = web::json::value(-translateXYZ(2));
+
 	// write json to cache file.
 	json[key] = update;
 	std::ofstream ofs(cache);

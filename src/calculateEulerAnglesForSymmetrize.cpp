@@ -424,7 +424,7 @@ namespace
 bool calculateEulerAnglesForSymmetrize(
     const Mesh<double, int> &meshIn,
     Eigen::Matrix<double, 3, 3> &rotMatrix,
-    double &reflectionX)
+    Eigen::Matrix<double, 1, 3> &translateXYZ)
 {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V, VRaw;
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> F, F_;
@@ -544,18 +544,17 @@ bool calculateEulerAnglesForSymmetrize(
     estimateBestPlane(V, F, transformation, indices.at(0), point, normal);
 
     // move to center
-    VRaw.rowwise() -= point;
     const Eigen::Quaternion<double> q = Eigen::Quaternion<double>::FromTwoVectors(Eigen::Vector3d::UnitX(), normal);
 
     rotMatrix = q.normalized().toRotationMatrix();
 
     VRaw *= rotMatrix;
     VRaw /= ratio;
+    translateXYZ = -(VRaw.colwise().maxCoeff() + VRaw.colwise().minCoeff()) * 0.5;
 
-    reflectionX = (VRaw.col(0).maxCoeff() + VRaw.col(0).minCoeff()) * 0.5;
-    // V.col(0).array() -= reflectionX;
-
-    // igl::writeOBJ("symmetrized.obj", V, F);
+    point /= ratio;
+    point *= rotMatrix;
+    translateXYZ(0) = -point(0);
 
     return true;
 }
