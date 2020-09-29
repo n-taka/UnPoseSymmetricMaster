@@ -86,19 +86,6 @@
 //////
 [ISubPalette, "ZPlugin:UnPoseSymmetric Master"]
 
-[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0.0, 0.001, -180.0, 180.0, "Rotate with X axis (for Symmetry)",
-    [VarSet, currentRotMod, [IModGet, "Tool:Deformation:Rotate"]]
-    [IModSet, "Tool:Deformation:Rotate", 1]
-    [ISet, "Tool:Deformation:Rotate", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
-    [IModSet, "Tool:Deformation:Rotate", [Var, currentRotMod]]
-    [VarSet, rotX, [Var, rotX] + [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
-    [ISet, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0]
-    // update internal value...
-    ,
-    0,
-    1
-]
-
 [IButton, "ZPlugin:UnPoseSymmetric Master:Toggle Posed <=> Symmetry", "Toggle Posed posture and Symmetry posture.",
     [If, [IExists, Tool:Export],
         [IFreeze,
@@ -202,3 +189,73 @@
     0,
     1
 ]
+
+[ISlider, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0.0, 0.001, -180.0, 180.0, "Rotate with X axis (for Symmetry)",
+    [VarSet, currentRotMod, [IModGet, "Tool:Deformation:Rotate"]]
+    [IModSet, "Tool:Deformation:Rotate", 1]
+    [ISet, "Tool:Deformation:Rotate", [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
+    [IModSet, "Tool:Deformation:Rotate", [Var, currentRotMod]]
+    [VarSet, rotX, [Var, rotX] + [IGet, "ZPlugin:UnPoseSymmetric Master:Rotate X"]]
+    [ISet, "ZPlugin:UnPoseSymmetric Master:Rotate X", 0]
+    // update internal value...
+    ,
+    0,
+    1
+]
+
+[IButton, "ZPlugin:UnPoseSymmetric Master:Remove outdated rotation", "Remove outdated rotation information.",
+    [IFreeze,
+        [RoutineCall, CheckSystem]
+
+        // get the name of current active sub tool
+        [VarSet, subTName, ""]
+        [VarSet, activeSubT, [SubToolGetActiveIndex]]
+        [VarSet, activeSubTName, ""]
+
+        // select active subtool
+        [SubToolSelect, [Var, activeSubT]]
+
+        [VarSet, subTName, [IGetTitle,Tool:ItemInfo]] // gets the tool name
+        [VarSet, activeSubTName, [StrExtract, #subTName, 0, [StrLength, #subTName]-2]] // this takes of the end period
+
+        // text for dll
+        [VarSet, textForDll, [StrMerge, [Var, dataDirPath], [Var, activeSubTName], ".GoZ"]]
+
+        [FileExecute, [Var, dllPath], "eraseCachedRotation", #textForDll, 0, memInOut, ]
+    ]
+    ,
+    0,
+    1
+]
+
+[IButton, "ZPlugin:UnPoseSymmetric Master:Load from file", "Load rotation info from file.",
+    [VarSet, cacheFileName, [FileNameAsk, "JSON(.json)", , "Please select a file to load..."]]
+    [If, [StrLength, cacheFileName] > 0,
+        [IFreeze,
+            [RoutineCall, CheckSystem]
+            [FileExecute, [Var, dllPath], "loadCacheFile", #cacheFileName, 0, , ]
+        ]
+    ]
+    ,
+    0,
+    1
+]
+
+[ISwitch, "ZPlugin:UnPoseSymmetric Master:Auto save", 0, "Automatically save the rotation to file.",
+    [VarSet, cacheFileName, [FileNameAsk, "JSON(.json)", "rotation.json", "Please select a file to save..."]]
+    [If, [StrLength, cacheFileName] > 0,
+        [IFreeze,
+            [RoutineCall, CheckSystem]
+            [FileExecute, [Var, dllPath], "selectCacheFile", #cacheFileName, 0, , ]
+        ]
+    ]
+    ,
+    [IFreeze,
+        [RoutineCall, CheckSystem]
+        [FileExecute, [Var, dllPath], "selectCacheFile", "", 1, , ]
+    ],
+    0,
+    1
+]
+
+[IEnable, "ZPlugin:UnPoseSymmetric Master:Auto save"]

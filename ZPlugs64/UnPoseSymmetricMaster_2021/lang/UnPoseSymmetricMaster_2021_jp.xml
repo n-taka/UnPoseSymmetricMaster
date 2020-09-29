@@ -10,4 +10,16 @@
     <title text="Toggle Posed <=> Symmetry" trans="ポーズ状態<=>左右対称状態 切り替え"/>
     <info text="Toggle Posed posture and Symmetry posture." trans="ポーズ状態と左右対称状態を切り替えます"/>
   </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Remove outdated rotation">
+    <title text="Remove outdated rotation" trans="以前の回転情報を削除"/>
+    <info text="Remove outdated rotation information." trans="以前の回転情報を削除します(ポーズ変更時など)"/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Load from file">
+    <title text="Load from file" trans="ファイルから読み込み"/>
+    <info text="Load rotation info from file." trans="回転情報をファイルから読み込みます"/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Auto save">
+    <title text="Auto save" trans="自動保存"/>
+    <info text="Automatically save the rotation to file." trans="ポーズ状態/左右対称状態をファイルに自動保存"/>
+  </button>
 </buttons>

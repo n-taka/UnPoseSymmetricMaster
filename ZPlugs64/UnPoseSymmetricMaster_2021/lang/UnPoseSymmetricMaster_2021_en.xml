@@ -10,4 +10,16 @@
     <title text="Toggle Posed <=> Symmetry" trans=""/>
     <info text="Toggle Posed posture and Symmetry posture." trans=""/>
   </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Remove outdated rotation">
+    <title text="Remove outdated rotation" trans=""/>
+    <info text="Remove outdated rotation information." trans=""/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Load from file">
+    <title text="Load from file" trans=""/>
+    <info text="Load rotation info from file." trans=""/>
+  </button>
+  <button path="ZPlugin:UnPoseSymmetric Master:Auto save">
+    <title text="Auto save" trans=""/>
+    <info text="Automatically save the rotation to file." trans=""/>
+  </button>
 </buttons>
